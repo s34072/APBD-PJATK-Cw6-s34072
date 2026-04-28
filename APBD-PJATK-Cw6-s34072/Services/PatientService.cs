@@ -19,10 +19,11 @@ public class PatientService : IPatientService
 
         await using var connection = new SqlConnection(connectionString);
         
-        var query = "SELECT IdPatient, FirstName, LastName, Email, PhoneNumber, DateOfBirth, IsActive FROM dbo.Patients";
+        var query = "SELECT IdPatient, FirstName, LastName, Email, PhoneNumber, DateOfBirth, IsActive FROM dbo.Patients WHERE IsActive = 1";
+        
         if (!string.IsNullOrEmpty(lastName))
         {
-            query += " WHERE LastName = @LastName";
+            query += " AND LastName = @LastName";
         }
 
         await using var command = new SqlCommand(query, connection);
@@ -67,7 +68,8 @@ public class PatientService : IPatientService
             LEFT JOIN dbo.Appointments a ON p.IdPatient = a.IdPatient
             LEFT JOIN dbo.Doctors d ON a.IdDoctor = d.IdDoctor
             LEFT JOIN dbo.Specializations s ON d.IdSpecialization = s.IdSpecialization
-            WHERE p.IdPatient = @Id";
+            WHERE p.IdPatient = @Id AND p.IsActive = 1
+            ORDER BY a.AppointmentDate DESC";
 
         await using var command = new SqlCommand(query, connection);
         command.Parameters.AddWithValue("@Id", id);
