@@ -167,4 +167,54 @@ public class PatientService : IPatientService
 
         return rowsAffected > 0;
     }
+    
+    public async Task<PatientDTO?> UpdatePatientAsync(int id, UpdatePatientDTO updatedPatient)
+    {
+        var connectionString = _configuration.GetConnectionString("Default");
+        await using var connection = new SqlConnection(connectionString);
+        await connection.OpenAsync();
+
+        var checkEmailQuery = "SELECT COUNT(1) FROM dbo.Patients WHERE Email = @Email AND IdPatient != @Id";
+        await using var checkCommand = new SqlCommand(checkEmailQuery, connection);
+        checkCommand.Parameters.AddWithValue("@Email", updatedPatient.Email);
+        checkCommand.Parameters.AddWithValue("@Id", id);
+        
+        var emailTaken = (int)await checkCommand.ExecuteScalarAsync() > 0;
+        if (emailTaken)
+        {
+            throw new Exception("EmailExists");
+        }
+
+        var query = @"
+            UPDATE dbo.Patients 
+            SET FirstName = @FirstName, LastName = @LastName, Email = @Email, 
+                PhoneNumber = @PhoneNumber, DateOfBirth = @DateOfBirth
+            WHERE IdPatient = @Id AND IsActive = 1";
+
+        await using var command = new SqlCommand(query, connection);
+        command.Parameters.AddWithValue("@Id", id);
+        command.Parameters.AddWithValue("@FirstName", updatedPatient.FirstName);
+        command.Parameters.AddWithValue("@LastName", updatedPatient.LastName);
+        command.Parameters.AddWithValue("@Email", updatedPatient.Email);
+        command.Parameters.AddWithValue("@PhoneNumber", updatedPatient.PhoneNumber);
+        command.Parameters.AddWithValue("@DateOfBirth", updatedPatient.DateOfBirth);
+
+        var rowsAffected = await command.ExecuteNonQueryAsync();
+
+        if (rowsAffected == 0)
+        {
+            return null;
+        }
+
+        return new PatientDTO
+        {
+            IdPatient = id,
+            FirstName = updatedPatient.FirstName,
+            LastName = updatedPatient.LastName,
+            Email = updatedPatient.Email,
+            PhoneNumber = updatedPatient.PhoneNumber,
+            DateOfBirth = updatedPatient.DateOfBirth,
+            IsActive = true
+        };
+    }
 }
