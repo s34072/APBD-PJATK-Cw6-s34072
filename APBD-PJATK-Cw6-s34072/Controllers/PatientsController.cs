@@ -60,4 +60,24 @@ public class PatientsController : ControllerBase
 
         return NoContent();
     }
+    
+    [HttpPut("{id}")]
+    public async Task<IActionResult> UpdatePatient(int id, UpdatePatientDTO updatedPatient)
+    {
+        try
+        {
+            var patient = await _patientService.UpdatePatientAsync(id, updatedPatient);
+
+            if (patient == null)
+            {
+                return NotFound($"Aktywny pacjent o ID {id} nie istnieje w bazie.");
+            }
+
+            return Ok(patient);
+        }
+        catch (Exception ex) when (ex.Message == "EmailExists")
+        {
+            return Conflict($"Błąd: Adres email {updatedPatient.Email} jest już przypisany do innego pacjenta.");
+        }
+    }
 }
