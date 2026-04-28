@@ -1,3 +1,4 @@
+using APBD_PJATK_Cw6_s34072.DTOs;
 using APBD_PJATK_Cw6_s34072.Services;
 using Microsoft.AspNetCore.Mvc;
 
@@ -32,5 +33,31 @@ public class PatientsController : ControllerBase
         }
 
         return Ok(patient);
+    }
+    
+    [HttpPost]
+    public async Task<IActionResult> AddPatient(CreatePatientDTO newPatient)
+    {
+        var createdPatient = await _patientService.AddPatientAsync(newPatient);
+
+        if (createdPatient == null)
+        {
+            return Conflict($"Błąd: Pacjent z adresem email {newPatient.Email} już istnieje.");
+        }
+
+        return Created($"/api/Patients/{createdPatient.IdPatient}", createdPatient);
+    }
+
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> DeactivatePatient(int id)
+    {
+        var success = await _patientService.DeactivatePatientAsync(id);
+
+        if (!success)
+        {
+            return NotFound($"Pacjent o ID {id} nie istnieje w bazie.");
+        }
+
+        return NoContent();
     }
 }
