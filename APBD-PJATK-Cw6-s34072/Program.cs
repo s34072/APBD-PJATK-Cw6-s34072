@@ -1,7 +1,10 @@
+using APBD_PJATK_Cw6_s34072.Services;
+
 var builder = WebApplication.CreateBuilder(args);
 
-// Dodajemy obsługę kontrolerów
 builder.Services.AddControllers();
+builder.Services.AddScoped<IPatientService, PatientService>();
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
@@ -15,7 +18,6 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-// Mapujemy kontrolery
 app.MapControllers();
 
 app.Run();
