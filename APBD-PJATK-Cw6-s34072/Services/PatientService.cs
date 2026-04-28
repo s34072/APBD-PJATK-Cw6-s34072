@@ -109,4 +109,62 @@ public class PatientService : IPatientService
 
         return patient;
     }
+    public async Task<PatientDTO?> AddPatientAsync(CreatePatientDTO newPatient)
+    {
+        var connectionString = _configuration.GetConnectionString("Default");
+        await using var connection = new SqlConnection(connectionString);
+
+        var checkEmailQuery = "SELECT COUNT(1) FROM dbo.Patients WHERE Email = @Email";
+        await using var checkCommand = new SqlCommand(checkEmailQuery, connection);
+        checkCommand.Parameters.AddWithValue("@Email", newPatient.Email);
+
+        await connection.OpenAsync();
+        
+        var emailExists = (int)await checkCommand.ExecuteScalarAsync() > 0;
+        if (emailExists)
+        {
+            return null; 
+        }
+
+        var insertQuery = @"
+            INSERT INTO dbo.Patients (FirstName, LastName, Email, PhoneNumber, DateOfBirth, IsActive)
+            OUTPUT INSERTED.IdPatient
+            VALUES (@FirstName, @LastName, @Email, @PhoneNumber, @DateOfBirth, 1)";
+
+        await using var insertCommand = new SqlCommand(insertQuery, connection);
+        insertCommand.Parameters.AddWithValue("@FirstName", newPatient.FirstName);
+        insertCommand.Parameters.AddWithValue("@LastName", newPatient.LastName);
+        insertCommand.Parameters.AddWithValue("@Email", newPatient.Email);
+        insertCommand.Parameters.AddWithValue("@PhoneNumber", newPatient.PhoneNumber);
+        insertCommand.Parameters.AddWithValue("@DateOfBirth", newPatient.DateOfBirth);
+
+        var newId = (int)await insertCommand.ExecuteScalarAsync();
+
+        return new PatientDTO
+        {
+            IdPatient = newId,
+            FirstName = newPatient.FirstName,
+            LastName = newPatient.LastName,
+            Email = newPatient.Email,
+            PhoneNumber = newPatient.PhoneNumber,
+            DateOfBirth = newPatient.DateOfBirth,
+            IsActive = true
+        };
+    }
+
+    public async Task<bool> DeactivatePatientAsync(int id)
+    {
+        var connectionString = _configuration.GetConnectionString("Default");
+        await using var connection = new SqlConnection(connectionString);
+
+        var query = "UPDATE dbo.Patients SET IsActive = 0 WHERE IdPatient = @Id";
+        await using var command = new SqlCommand(query, connection);
+        command.Parameters.AddWithValue("@Id", id);
+
+        await connection.OpenAsync();
+        
+        var rowsAffected = await command.ExecuteNonQueryAsync();
+
+        return rowsAffected > 0;
+    }
 }

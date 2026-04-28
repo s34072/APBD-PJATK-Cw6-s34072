@@ -6,4 +6,6 @@ public interface IPatientService
 {
     Task<IEnumerable<PatientDTO>> GetPatientsAsync(string? lastName);
     Task<PatientDetailsDTO?> GetPatientByIdAsync(int id);
+    Task<PatientDTO?> AddPatientAsync(CreatePatientDTO newPatient);
+    Task<bool> DeactivatePatientAsync(int id);
 }
